@@ -63,6 +63,9 @@ pub enum Capability {
     ClientReply,           // +draft/reply client tag
     ClientReact,           // +draft/react client tag
     
+    // Iron Protocol capabilities
+    IronProtocolV1,        // +iron-protocol/v1 - Iron Protocol extensions
+    
     // Custom/Vendor specific
     Custom(String),
 }
@@ -120,6 +123,9 @@ impl Capability {
             "+draft/reply" => Capability::ClientReply,
             "+draft/react" => Capability::ClientReact,
             
+            // Iron Protocol capabilities
+            "+iron-protocol/v1" => Capability::IronProtocolV1,
+            
             other => Capability::Custom(other.to_string()),
         }
     }
@@ -176,6 +182,9 @@ impl Capability {
             Capability::ClientReply => "+draft/reply",
             Capability::ClientReact => "+draft/react",
             
+            // Iron Protocol capabilities
+            Capability::IronProtocolV1 => "+iron-protocol/v1",
+            
             Capability::Custom(s) => s,
         }
     }
@@ -186,7 +195,8 @@ impl Capability {
             Capability::Sasl | 
             Capability::StrictTransportSecurity |
             Capability::AccountTag |
-            Capability::AccountNotify
+            Capability::AccountNotify |
+            Capability::IronProtocolV1
         )
     }
 

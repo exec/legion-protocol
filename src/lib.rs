@@ -39,6 +39,7 @@ pub mod capabilities;
 pub mod sasl;
 pub mod validation;
 pub mod replies;
+pub mod iron;
 
 #[cfg(feature = "bleeding-edge")]
 pub mod bleeding_edge;
@@ -49,6 +50,8 @@ pub use message::IrcMessage;
 pub use command::Command;
 pub use capabilities::{Capability, CapabilitySet, CapabilityHandler};
 pub use replies::Reply;
+pub use utils::ChannelType;
+pub use iron::{IronSession, IronVersion, IronNegotiationResult, IronChannelHandler, ChannelJoinResult, IronChannelError};
 
 #[cfg(feature = "bleeding-edge")]
 pub use bleeding_edge::{MessageReply, MessageReaction, ReactionAction};
@@ -84,6 +87,43 @@ pub mod constants {
 pub mod utils {
     use crate::constants::*;
     
+    /// Channel type enumeration for Iron Protocol
+    #[derive(Debug, Clone, PartialEq, Eq)]
+    pub enum ChannelType {
+        /// Standard IRC global channel (#channel)
+        IrcGlobal,
+        /// Standard IRC local channel (&channel)  
+        IrcLocal,
+        /// Iron Protocol encrypted channel (!channel)
+        IronEncrypted,
+        /// Invalid/unknown channel type
+        Invalid,
+    }
+    
+    /// Determine the type of a channel based on its prefix
+    pub fn get_channel_type(channel: &str) -> ChannelType {
+        if channel.is_empty() {
+            return ChannelType::Invalid;
+        }
+        
+        match channel.chars().next().unwrap() {
+            '#' => ChannelType::IrcGlobal,
+            '&' => ChannelType::IrcLocal,
+            '!' => ChannelType::IronEncrypted,
+            _ => ChannelType::Invalid,
+        }
+    }
+    
+    /// Check if a channel is an Iron Protocol encrypted channel
+    pub fn is_iron_encrypted_channel(channel: &str) -> bool {
+        matches!(get_channel_type(channel), ChannelType::IronEncrypted)
+    }
+    
+    /// Check if a channel is a standard IRC channel (# or &)
+    pub fn is_standard_irc_channel(channel: &str) -> bool {
+        matches!(get_channel_type(channel), ChannelType::IrcGlobal | ChannelType::IrcLocal)
+    }
+    
     /// Check if a string is a valid IRC nickname
     pub fn is_valid_nick(nick: &str) -> bool {
         if nick.is_empty() || nick.len() > MAX_NICK_LENGTH {
@@ -115,6 +155,26 @@ pub mod utils {
         
         // Cannot contain spaces, control characters, or commas
         !channel.chars().any(|c| c.is_control() || c == ' ' || c == ',' || c == '\x07')
+    }
+    
+    /// Check if a string is a valid Iron Protocol encrypted channel name
+    pub fn is_valid_iron_channel(channel: &str) -> bool {
+        if channel.is_empty() || channel.len() > MAX_CHANNEL_LENGTH {
+            return false;
+        }
+        
+        // Must start with !
+        if !channel.starts_with('!') {
+            return false;
+        }
+        
+        // Cannot contain spaces, control characters, or commas
+        !channel.chars().any(|c| c.is_control() || c == ' ' || c == ',' || c == '\x07')
+    }
+    
+    /// Check if a string is a valid channel name (IRC or Iron)
+    pub fn is_valid_any_channel(channel: &str) -> bool {
+        is_valid_channel(channel) || is_valid_iron_channel(channel)
     }
     
     /// Escape IRC message text for safe transmission
@@ -162,5 +222,41 @@ mod tests {
         assert!(!is_valid_channel("#test channel")); // No spaces
         assert!(!is_valid_channel("#test,channel")); // No commas
         assert!(!is_valid_channel(&format!("#{}", "a".repeat(60)))); // Too long
+    }
+    
+    #[test]
+    fn test_valid_iron_channels() {
+        assert!(is_valid_iron_channel("!encrypted"));
+        assert!(is_valid_iron_channel("!secure-chat"));
+        assert!(is_valid_iron_channel("!room123"));
+        assert!(is_valid_iron_channel("!test_channel"));
+    }
+    
+    #[test] 
+    fn test_invalid_iron_channels() {
+        assert!(!is_valid_iron_channel(""));
+        assert!(!is_valid_iron_channel("encrypted")); // Must start with !
+        assert!(!is_valid_iron_channel("#encrypted")); // Wrong prefix
+        assert!(!is_valid_iron_channel("!test channel")); // No spaces
+        assert!(!is_valid_iron_channel("!test,channel")); // No commas
+        assert!(!is_valid_iron_channel(&format!("!{}", "a".repeat(60)))); // Too long
+    }
+    
+    #[test]
+    fn test_channel_type_detection() {
+        use utils::*;
+        
+        assert_eq!(get_channel_type("#general"), ChannelType::IrcGlobal);
+        assert_eq!(get_channel_type("&local"), ChannelType::IrcLocal);
+        assert_eq!(get_channel_type("!encrypted"), ChannelType::IronEncrypted);
+        assert_eq!(get_channel_type("invalid"), ChannelType::Invalid);
+        assert_eq!(get_channel_type(""), ChannelType::Invalid);
+        
+        assert!(is_iron_encrypted_channel("!encrypted"));
+        assert!(!is_iron_encrypted_channel("#general"));
+        
+        assert!(is_standard_irc_channel("#general"));
+        assert!(is_standard_irc_channel("&local"));
+        assert!(!is_standard_irc_channel("!encrypted"));
     }
 }
