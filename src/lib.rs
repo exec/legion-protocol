@@ -1,6 +1,6 @@
-//! # Iron Protocol
+//! # Legion Protocol
 //!
-//! A bleeding-edge IRCv3 protocol library for modern IRC clients and servers.
+//! A secure, IRC-compatible communication protocol with E2E encryption support.
 //!
 //! This crate provides comprehensive support for the IRC protocol with particular
 //! emphasis on IRCv3 capabilities and the latest 2024-2025 draft specifications.
@@ -17,7 +17,7 @@
 //! ## Examples
 //!
 //! ```rust
-//! use iron_protocol::{IrcMessage, Command, Capability};
+//! use legion_protocol::{IrcMessage, Command, Capability};
 //!
 //! // Parse an IRC message with tags
 //! let msg: IrcMessage = "@id=123;time=2023-01-01T00:00:00.000Z PRIVMSG #channel :Hello world"
@@ -40,6 +40,7 @@ pub mod sasl;
 pub mod validation;
 pub mod replies;
 pub mod iron;
+pub mod admin;
 
 #[cfg(feature = "bleeding-edge")]
 pub mod bleeding_edge;
@@ -52,6 +53,8 @@ pub use capabilities::{Capability, CapabilitySet, CapabilityHandler};
 pub use replies::Reply;
 pub use utils::ChannelType;
 pub use iron::{IronSession, IronVersion, IronNegotiationResult, IronChannelHandler, ChannelJoinResult, IronChannelError};
+pub use admin::{AdminOperation, MemberOperation, BanOperation, KeyOperation, MemberRole, ChannelMode, 
+               ChannelSettings, AdminResult, ChannelAdmin, Permission};
 
 #[cfg(feature = "bleeding-edge")]
 pub use bleeding_edge::{MessageReply, MessageReaction, ReactionAction};
@@ -87,15 +90,15 @@ pub mod constants {
 pub mod utils {
     use crate::constants::*;
     
-    /// Channel type enumeration for Iron Protocol
+    /// Channel type enumeration for Legion Protocol
     #[derive(Debug, Clone, PartialEq, Eq)]
     pub enum ChannelType {
         /// Standard IRC global channel (#channel)
         IrcGlobal,
         /// Standard IRC local channel (&channel)  
         IrcLocal,
-        /// Iron Protocol encrypted channel (!channel)
-        IronEncrypted,
+        /// Legion Protocol encrypted channel (!channel)
+        LegionEncrypted,
         /// Invalid/unknown channel type
         Invalid,
     }
@@ -109,14 +112,20 @@ pub mod utils {
         match channel.chars().next().unwrap() {
             '#' => ChannelType::IrcGlobal,
             '&' => ChannelType::IrcLocal,
-            '!' => ChannelType::IronEncrypted,
+            '!' => ChannelType::LegionEncrypted,
             _ => ChannelType::Invalid,
         }
     }
     
-    /// Check if a channel is an Iron Protocol encrypted channel
+    /// Check if a channel is a Legion Protocol encrypted channel
+    pub fn is_legion_encrypted_channel(channel: &str) -> bool {
+        matches!(get_channel_type(channel), ChannelType::LegionEncrypted)
+    }
+    
+    /// Legacy alias for backward compatibility
+    #[deprecated(note = "Use is_legion_encrypted_channel instead")]
     pub fn is_iron_encrypted_channel(channel: &str) -> bool {
-        matches!(get_channel_type(channel), ChannelType::IronEncrypted)
+        is_legion_encrypted_channel(channel)
     }
     
     /// Check if a channel is a standard IRC channel (# or &)
@@ -157,8 +166,8 @@ pub mod utils {
         !channel.chars().any(|c| c.is_control() || c == ' ' || c == ',' || c == '\x07')
     }
     
-    /// Check if a string is a valid Iron Protocol encrypted channel name
-    pub fn is_valid_iron_channel(channel: &str) -> bool {
+    /// Check if a string is a valid Legion Protocol encrypted channel name
+    pub fn is_valid_legion_channel(channel: &str) -> bool {
         if channel.is_empty() || channel.len() > MAX_CHANNEL_LENGTH {
             return false;
         }
@@ -172,9 +181,15 @@ pub mod utils {
         !channel.chars().any(|c| c.is_control() || c == ' ' || c == ',' || c == '\x07')
     }
     
-    /// Check if a string is a valid channel name (IRC or Iron)
+    /// Legacy alias for backward compatibility
+    #[deprecated(note = "Use is_valid_legion_channel instead")]
+    pub fn is_valid_iron_channel(channel: &str) -> bool {
+        is_valid_legion_channel(channel)
+    }
+    
+    /// Check if a string is a valid channel name (IRC or Legion)
     pub fn is_valid_any_channel(channel: &str) -> bool {
-        is_valid_channel(channel) || is_valid_iron_channel(channel)
+        is_valid_channel(channel) || is_valid_legion_channel(channel)
     }
     
     /// Escape IRC message text for safe transmission
@@ -225,21 +240,32 @@ mod tests {
     }
     
     #[test]
-    fn test_valid_iron_channels() {
-        assert!(is_valid_iron_channel("!encrypted"));
-        assert!(is_valid_iron_channel("!secure-chat"));
-        assert!(is_valid_iron_channel("!room123"));
-        assert!(is_valid_iron_channel("!test_channel"));
+    fn test_valid_legion_channels() {
+        assert!(is_valid_legion_channel("!encrypted"));
+        assert!(is_valid_legion_channel("!secure-chat"));
+        assert!(is_valid_legion_channel("!room123"));
+        assert!(is_valid_legion_channel("!test_channel"));
     }
     
     #[test] 
-    fn test_invalid_iron_channels() {
-        assert!(!is_valid_iron_channel(""));
-        assert!(!is_valid_iron_channel("encrypted")); // Must start with !
-        assert!(!is_valid_iron_channel("#encrypted")); // Wrong prefix
-        assert!(!is_valid_iron_channel("!test channel")); // No spaces
-        assert!(!is_valid_iron_channel("!test,channel")); // No commas
-        assert!(!is_valid_iron_channel(&format!("!{}", "a".repeat(60)))); // Too long
+    fn test_invalid_legion_channels() {
+        assert!(!is_valid_legion_channel(""));
+        assert!(!is_valid_legion_channel("encrypted")); // Must start with !
+        assert!(!is_valid_legion_channel("#encrypted")); // Wrong prefix
+        assert!(!is_valid_legion_channel("!test channel")); // No spaces
+        assert!(!is_valid_legion_channel("!test,channel")); // No commas
+        assert!(!is_valid_legion_channel(&format!("!{}", "a".repeat(60)))); // Too long
+    }
+    
+    #[test]
+    fn test_backward_compatibility_iron_channels() {
+        // Test that the old function still works (with deprecation warning)
+        #[allow(deprecated)]
+        fn test_old_function() {
+            assert!(is_valid_iron_channel("!encrypted"));
+            assert!(!is_valid_iron_channel("#encrypted"));
+        }
+        test_old_function();
     }
     
     #[test]
@@ -248,12 +274,19 @@ mod tests {
         
         assert_eq!(get_channel_type("#general"), ChannelType::IrcGlobal);
         assert_eq!(get_channel_type("&local"), ChannelType::IrcLocal);
-        assert_eq!(get_channel_type("!encrypted"), ChannelType::IronEncrypted);
+        assert_eq!(get_channel_type("!encrypted"), ChannelType::LegionEncrypted);
         assert_eq!(get_channel_type("invalid"), ChannelType::Invalid);
         assert_eq!(get_channel_type(""), ChannelType::Invalid);
         
-        assert!(is_iron_encrypted_channel("!encrypted"));
-        assert!(!is_iron_encrypted_channel("#general"));
+        assert!(is_legion_encrypted_channel("!encrypted"));
+        assert!(!is_legion_encrypted_channel("#general"));
+        
+        // Test backward compatibility
+        #[allow(deprecated)]
+        {
+            assert!(is_iron_encrypted_channel("!encrypted"));
+            assert!(!is_iron_encrypted_channel("#general"));
+        }
         
         assert!(is_standard_irc_channel("#general"));
         assert!(is_standard_irc_channel("&local"));

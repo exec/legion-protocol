@@ -51,6 +51,8 @@ pub enum Command {
     Whois(Vec<String>),
     /// WHOWAS command - historical user information
     Whowas(String, Option<i32>),
+    /// QUERY command - open private message window
+    Query(String),
     
     // Channel management
     /// KICK command - remove user from channel
@@ -242,6 +244,13 @@ impl Command {
                 if let Some(nick) = params.first() {
                     let count = params.get(1).and_then(|s| s.parse().ok());
                     Command::Whowas(nick.clone(), count)
+                } else {
+                    Command::Unknown(command.to_string(), params)
+                }
+            }
+            "QUERY" => {
+                if let Some(target) = params.first() {
+                    Command::Query(target.clone())
                 } else {
                     Command::Unknown(command.to_string(), params)
                 }
@@ -442,6 +451,7 @@ impl Command {
             Command::Who(_) => "WHO",
             Command::Whois(_) => "WHOIS",
             Command::Whowas(_, _) => "WHOWAS",
+            Command::Query(_) => "QUERY",
             Command::Kick { .. } => "KICK",
             Command::Mode { .. } => "MODE",
             Command::Invite { .. } => "INVITE",

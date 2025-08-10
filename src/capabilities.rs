@@ -63,8 +63,12 @@ pub enum Capability {
     ClientReply,           // +draft/reply client tag
     ClientReact,           // +draft/react client tag
     
-    // Iron Protocol capabilities
-    IronProtocolV1,        // +iron-protocol/v1 - Iron Protocol extensions
+    // Legion Protocol capabilities
+    LegionProtocolV1,      // +legion-protocol/v1 - Legion Protocol extensions
+    
+    // Legacy Iron Protocol capability (for backward compatibility)
+    #[deprecated(note = "Use LegionProtocolV1 instead")]
+    IronProtocolV1,
     
     // Custom/Vendor specific
     Custom(String),
@@ -123,7 +127,10 @@ impl Capability {
             "+draft/reply" => Capability::ClientReply,
             "+draft/react" => Capability::ClientReact,
             
-            // Iron Protocol capabilities
+            // Legion Protocol capabilities  
+            "+legion-protocol/v1" => Capability::LegionProtocolV1,
+            
+            // Legacy Iron Protocol capability (backward compatibility)
             "+iron-protocol/v1" => Capability::IronProtocolV1,
             
             other => Capability::Custom(other.to_string()),
@@ -182,7 +189,10 @@ impl Capability {
             Capability::ClientReply => "+draft/reply",
             Capability::ClientReact => "+draft/react",
             
-            // Iron Protocol capabilities
+            // Legion Protocol capabilities
+            Capability::LegionProtocolV1 => "+legion-protocol/v1",
+            
+            // Legacy Iron Protocol capability (backward compatibility)
             Capability::IronProtocolV1 => "+iron-protocol/v1",
             
             Capability::Custom(s) => s,
@@ -196,7 +206,8 @@ impl Capability {
             Capability::StrictTransportSecurity |
             Capability::AccountTag |
             Capability::AccountNotify |
-            Capability::IronProtocolV1
+            Capability::LegionProtocolV1 |
+            Capability::IronProtocolV1  // Legacy support
         )
     }
 
@@ -685,10 +696,11 @@ mod tests {
     #[test]
     fn test_capability_handler() {
         let mut handler = CapabilityHandler::new();
-        let params = vec!["*".to_string(), "LS".to_string(), "sasl=PLAIN message-tags".to_string()];
+        // Standard CAP LS response format: nick, "LS", capabilities
+        let params = vec!["testnick".to_string(), "sasl=PLAIN message-tags".to_string()];
         
         let complete = handler.handle_cap_ls(&params).unwrap();
-        assert!(!complete);
+        assert!(complete); // Should be true because it's not a multiline response
         assert!(handler.available_caps.contains_key("sasl"));
         assert!(handler.available_caps.contains_key("message-tags"));
     }

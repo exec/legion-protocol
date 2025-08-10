@@ -1,14 +1,14 @@
 [package]
-name = "iron-protocol"
+name = "legion-protocol"
 version = "0.1.0"
 edition = "2024"
-authors = ["IronChat Contributors"]
-description = "🦾 Bleeding-edge IRCv3 protocol library for modern IRC clients and servers"
+authors = ["Legion Protocol Contributors"]
+description = "🏛️ Legion Protocol - Secure, IRC-compatible communication protocol with E2E encryption"
 license = "MIT"
-repository = "https://github.com/exec/iron-protocol"
-homepage = "https://github.com/exec/iron-protocol"
-documentation = "https://docs.rs/iron-protocol"
-keywords = ["irc", "protocol", "ircv3", "chat", "networking"]
+repository = "https://github.com/exec/legion-protocol"
+homepage = "https://github.com/exec/legion-protocol"
+documentation = "https://docs.rs/legion-protocol"
+keywords = ["irc", "protocol", "ircv3", "chat", "networking", "encryption", "security"]
 categories = ["network-programming", "parser-implementations", "api-bindings"]
 readme = "README.md"
 

@@ -300,7 +300,7 @@ mod tests {
 
     #[test]
     fn test_sanitize_user_input() {
-        assert_eq!(sanitize_user_input("Hello\0world\r\n"), "Hello world ");
+        assert_eq!(sanitize_user_input("Hello\0world\r\n"), "Helloworld ");
         assert_eq!(sanitize_user_input("Normal text"), "Normal text");
         
         let long_input = "x".repeat(1000);

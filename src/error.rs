@@ -1,8 +1,8 @@
-//! Error types for the Iron Protocol library
+//! Error types for the Legion Protocol library
 
 use thiserror::Error;
 
-/// The main error type for Iron Protocol operations
+/// The main error type for Legion Protocol operations
 #[derive(Error, Debug, Clone, PartialEq)]
 pub enum IronError {
     /// Parse error when processing IRC messages or protocol data
