@@ -1,279 +1,270 @@
-# Legion Protocol
+# 🏛️ Legion Protocol
 
-**The secure, IRC-compatible communication protocol that unites communities.**
+**Modern IRC extensions with enhanced capabilities and security.**
 
-🏛️ **United we communicate** - Modern encrypted messaging with complete IRC backward compatibility.
+A comprehensive protocol library that extends IRC with modern features while maintaining complete backward compatibility. Part of the Legion ecosystem designed for secure, self-hostable communication.
 
 ## 🎯 Project Overview
 
-Legion Protocol is a revolutionary communication standard that bridges the gap between classic IRC and modern secure messaging. Part of a larger military-themed ecosystem designed to replace Discord while maintaining 100% IRC compatibility.
+Legion Protocol is a Rust library that implements IRC protocol parsing and extensions, providing the foundation for modern IRC servers and clients. It includes support for IRCv3 capabilities, message tagging, and enhanced channel management while maintaining 100% compatibility with standard IRC.
 
 ### 🏗️ Ecosystem Architecture
 
 ```
 🏛️ LEGION ECOSYSTEM
 ├── 📡 legion-protocol    (THIS REPO) - Core protocol library  
-├── 🛡️ phalanx          - General-purpose group E2E encryption
-├── 🏛️ centurion        - Server daemon (centuriond) 
-├── ⚔️ legionnaire      - Client applications
-└── 🤝 herald           - Bridge service (planned)
+├── 🏛️ centurion        - IRC server implementation
+├── ⚔️ legionnaire      - IRC client with modern features
+└── 🛡️ phalanx          - E2E encryption library (future)
 ```
 
-### 🎖️ Military Branding Strategy
+### 🎖️ Component Overview
 
-**Perfect synergy with [Bastion](https://github.com/exec/bastion) security platform:**
-- **Bastion** = Defensive security operations platform
-- **Legion** = Organized communication forces
-- **Centurion** = Command & control servers  
-- **Legionnaire** = Individual warrior clients
-- **Phalanx** = Collective encryption defense
-- **Herald** = Diplomatic messengers between legions
+- **Legion Protocol** = Core IRC protocol implementation and extensions
+- **Centurion** = High-performance IRC server daemon
+- **Legionnaire** = Modern IRC client with enhanced features
+- **Phalanx** = Encryption and security layer (planned)
 
-## 🚀 Current Status & Development State
+## 🚀 Features
 
-### ✅ COMPLETED FEATURES
+### ✅ Core Protocol Implementation
 
-#### 🏛️ **Core Legion Protocol Foundation**
-- **Channel prefix system implemented:**
-  - `#channel` = Standard IRC global channels
-  - `&channel` = Standard IRC local channels  
-  - `!channel` = Legion encrypted channels
-- **Capability system:** `+legion-protocol/v1` for client/server detection
-- **Channel type detection and validation**
-- **IRC user protection** - clear errors when IRC users try to join `!encrypted`
+#### 🏛️ **IRC Protocol Foundation**
+- **Complete RFC 1459/2812 compliance** with modern parsing
+- **Message parsing and formatting** with proper IRC formatting
+- **Command enumeration** covering all standard IRC commands
+- **Channel management** with prefix system support (`#`, `&`, `!`, `+`)
+- **User management** and state tracking
+- **Error handling** with proper IRC numeric replies
 
-#### 🛡️ **Security Architecture** 
-- **IronSession management** (tracks Legion negotiation state)
-- **Access control logic** for encrypted channels
-- **Capability-based protocol detection**
-- **100% IRC backward compatibility maintained**
+#### 📡 **IRCv3 Extensions**
+- **Capability negotiation** (CAP LS, REQ, ACK, NAK, END)
+- **Message tags** with proper parsing and validation
+- **SASL authentication** framework (multiple mechanisms)
+- **Server-time** and other time-based extensions
+- **Batch processing** for efficient message grouping
 
-#### 🎯 **Strategic Positioning**
-- **Discord replacement focus** (not just IRC modernization)
-- **Gaming community targeting** with military aesthetics
-- **Privacy-first messaging** with self-hosting
-- **Enterprise-ready** compliance and security
+#### 🔧 **Advanced Features**
+- **Admin module** for server management capabilities
+- **Protocol validation** ensuring message integrity
+- **Extensible design** for custom capabilities and commands
+- **Zero-copy parsing** where possible for performance
 
-### 🏗️ IN PROGRESS
+## 📦 Installation
 
-#### 📊 **Rebranding Effort**
-- ✅ GitHub repositories renamed and populated:
-  - `iron-protocol` → `legion-protocol` 
-  - `ironchatd` → `centurion`
-  - `ironchat` → `legionnaire` 
-- ⏳ Import statements and references need updating
-- ⏳ Documentation and branding updates
+Add Legion Protocol to your `Cargo.toml`:
 
-### 📋 IMMEDIATE NEXT STEPS
+```toml
+[dependencies]
+legion-protocol = { git = "https://github.com/dylan-k/legion-protocol.git" }
+```
 
-#### 🛡️ **Phalanx Protocol Integration** 
-**NEW STRATEGIC DECISION:** Phalanx will be a **separate crate** for maximum adoption:
-- **Repository created:** https://github.com/exec/phalanx
-- **Rationale:** Broader contribution base, multiple use cases, competitive positioning
-- **Architecture:** Legion Protocol will depend on Phalanx for encryption
-- **Benefits:** Crypto experts contribute to Phalanx, protocol experts to Legion
+Or for local development:
 
-#### 📝 **Critical Implementation Tasks:**
-1. **Update all import statements** from `iron_protocol` to `legion_protocol`
-2. **Implement Phalanx Protocol** in separate repository
-3. **Integrate Phalanx** as dependency in Legion Protocol
-4. **Update capability names** from `+iron-protocol/v1` to `+legion-protocol/v1`
-5. **Complete Centurion server** integration with Legion capabilities
-6. **Complete Legionnaire client** Legion Protocol support
+```toml
+[dependencies]
+legion-protocol = { path = "../legion-protocol" }
+```
 
-## 🔧 Technical Implementation Details
+## 🔧 Usage Examples
 
-### 📡 Protocol Capabilities
+### Basic Message Parsing
 
 ```rust
-// Current capabilities implemented
-"+legion-protocol/v1"  // Legion Protocol extensions
-"+draft/react"         // Message reactions  
-"+draft/reply"         // Message replies
-"sasl"                 // Authentication
-"message-tags"         // IRCv3 message tags
-"server-time"          // Timestamp support
-"batch"                // Message batching
+use legion_protocol::{Message, Command};
+
+// Parse IRC message
+let raw = ":nick!user@host PRIVMSG #channel :Hello world!";
+let message = Message::parse(raw)?;
+
+assert_eq!(message.prefix, Some("nick!user@host".to_string()));
+assert_eq!(message.command, "PRIVMSG");
+assert_eq!(message.params, vec!["#channel", "Hello world!"]);
+
+// Convert back to raw format
+let formatted = message.to_string();
 ```
 
-### 🏛️ Channel System
+### Command Handling
 
 ```rust
-use legion_protocol::{ChannelType, utils::get_channel_type};
+use legion_protocol::Command;
 
-let channel_type = get_channel_type("#general");   // ChannelType::IrcGlobal
-let channel_type = get_channel_type("&local");     // ChannelType::IrcLocal  
-let channel_type = get_channel_type("!encrypted"); // ChannelType::IronEncrypted
-```
+let command = Command::parse("PRIVMSG", vec!["#channel".to_string(), "Hello!".to_string()]);
 
-### 🛡️ Security Model
-
-```rust
-// Access control for encrypted channels
-use legion_protocol::{IronChannelHandler, ChannelJoinResult};
-
-let result = IronChannelHandler::can_join_channel(
-    "!secure",     // Legion encrypted channel
-    true,          // User has Legion support  
-    true           // Server has Legion support
-);
-// Result: ChannelJoinResult::AllowedEncrypted
-```
-
-### 🔄 Session Management
-
-```rust  
-use legion_protocol::{IronSession, IronVersion};
-
-let mut session = IronSession::new();
-session.set_version(IronVersion::V1);
-session.complete_negotiation();
-
-if session.is_iron_active() {
-    session.add_encrypted_channel("!secure".to_string());
+match command {
+    Command::Privmsg { target, message } => {
+        println!("Message to {}: {}", target, message);
+    }
+    Command::Join(channels, keys) => {
+        println!("Joining channels: {:?}", channels);
+    }
+    _ => {}
 }
 ```
 
-## 🎯 Strategic Market Position
+### Capability Negotiation
 
-### 📊 Competitive Analysis
+```rust
+use legion_protocol::Capability;
 
-```
-┌─────────────────┬─────────┬──────────┬─────────┬──────────┬──────────┐
-│ Protocol        │ IRC     │ Mobile   │ E2E     │ Fed      │ Gaming   │
-│                 │ Native  │ First    │ Native  │ Native   │ Voice    │
-├─────────────────┼─────────┼──────────┼─────────┼──────────┼──────────┤
-│ IRC             │ ✅      │ ❌       │ ❌      │ ❌       │ ❌       │
-│ Matrix          │ ❌      │ ⚠️       │ ✅      │ ✅       │ ❌       │
-│ Signal          │ ❌      │ ✅       │ ✅      │ ❌       │ ❌       │  
-│ Discord         │ ❌      │ ✅       │ ❌      │ ❌       │ ✅       │
-│ Telegram        │ ❌      │ ✅       │ ⚠️      │ ❌       │ ❌       │
-│ Legion Protocol │ ✅      │ ✅       │ ✅      │ ✅       │ ✅       │
-└─────────────────┴─────────┴──────────┴─────────┴──────────┴──────────┘
-```
+// Server advertising capabilities
+let caps = vec![
+    Capability::MessageTags,
+    Capability::ServerTime,
+    Capability::Sasl,
+    Capability::Batch,
+    Capability::EchoMessage,
+];
 
-### 🎖️ Unique Value Propositions
-
-1. **For IRC Veterans:** "Your existing workflow, but secure & mobile-friendly"
-2. **For Matrix Users:** "Same security, way simpler setup, broader compatibility"  
-3. **For Signal Users:** "Same encryption, but with persistent channels & desktop-first option"
-4. **For Discord Migrants:** "Community control, no corporate data harvesting, E2E encrypted"
-5. **For Gaming Communities:** "Discord-like experience with military aesthetics and real security"
-
-## 🛠️ Current Codebase Structure
-
-```
-legion-protocol/src/
-├── lib.rs              // Main exports, protocol constants
-├── capabilities.rs     // IRCv3 + Legion capability negotiation  
-├── message.rs          // IRC message parsing with Legion extensions
-├── command.rs          // IRC commands + Legion-specific commands
-├── iron.rs            // Legion session management & channel control
-├── utils.rs           // Channel validation, type detection
-├── error.rs           // Error handling
-├── sasl.rs            // Authentication mechanisms
-├── validation.rs      // Security validation
-├── replies.rs         // IRC numeric replies
-└── bleeding_edge.rs   // Experimental IRCv3 features
+// Convert to CAP LS format
+let cap_string = caps.iter()
+    .map(|cap| cap.to_string())
+    .collect::<Vec<_>>()
+    .join(" ");
 ```
 
-### 🔑 Key Modules
+### Message Tags
 
-#### **`iron.rs` - Legion Protocol Core**
-- `IronSession` - Tracks Legion negotiation state
-- `IronChannelHandler` - Encrypted channel access control  
-- `IronVersion` - Protocol versioning
-- `detect_iron_support()` - Capability detection
+```rust
+use legion_protocol::Message;
 
-#### **`capabilities.rs` - Protocol Negotiation**
-- `Capability::IronProtocolV1` - Legion Protocol capability
-- `CapabilityHandler` - IRCv3 capability negotiation
-- Essential capabilities list includes Legion Protocol
+// Create message with tags
+let mut message = Message::new("PRIVMSG")
+    .with_params(vec!["#channel".to_string(), "Hello!".to_string()]);
 
-#### **`utils.rs` - Channel System**
-- `ChannelType` - IRC vs Legion channel detection
-- `get_channel_type()` - Channel prefix parsing
-- `is_iron_encrypted_channel()` - Legion channel validation
+// Add server-time tag
+message = message.with_tag("time".to_string(), Some("2024-01-01T12:00:00.000Z".to_string()));
 
-## 🚧 Known Issues & Technical Debt
+// Add message ID
+message = message.with_tag("msgid".to_string(), Some("abc123".to_string()));
 
-### 🔄 **Rebranding Debt**
-- Import statements still reference `iron_protocol` in some places
-- Capability strings still use `+iron-protocol/v1` in some code paths  
-- Documentation and comments reference old "Iron" naming
-- Test cases need Legion Protocol terminology updates
+// Parse message with tags
+let raw = "@time=2024-01-01T12:00:00.000Z;msgid=abc123 PRIVMSG #channel :Hello!";
+let parsed = Message::parse(raw)?;
+assert_eq!(parsed.tags.get("time"), Some(&Some("2024-01-01T12:00:00.000Z".to_string())));
+```
 
-### 🛡️ **Encryption Gap**
-- Phalanx Protocol not yet implemented
-- No actual E2E encryption yet - only the framework
-- Channel encryption is planned but not functional
+### SASL Authentication
 
-### 📊 **Integration Issues** 
-- Centurion server needs Legion Protocol integration
-- Legionnaire client needs Legion capabilities implementation
-- Herald bridge service not started
+```rust
+use legion_protocol::SaslMechanism;
 
-## 🎯 Next Conversation Priorities
+// SASL PLAIN mechanism
+let mechanism = SaslMechanism::Plain;
+let credentials = "username\0username\0password";
+let encoded = base64::encode(credentials);
 
-### 🥇 **HIGHEST PRIORITY**
-1. **Complete rebranding** - Update all `iron_protocol` imports to `legion_protocol`
-2. **Fix capability strings** - Change `+iron-protocol/v1` to `+legion-protocol/v1` everywhere  
-3. **Start Phalanx implementation** in separate repository
+// Send AUTHENTICATE command
+println!("AUTHENTICATE PLAIN");
+println!("AUTHENTICATE {}", encoded);
+```
 
-### 🥈 **HIGH PRIORITY**  
-4. **Test Legion Protocol** - Ensure capability negotiation works end-to-end
-5. **Update Centurion** - Integrate Legion capabilities in server
-6. **Update Legionnaire** - Add Legion support to client
+## 🗂️ Library Structure
 
-### 🥉 **MEDIUM PRIORITY**
-7. **Clean up technical debt** - Remove old `read_message` implementations
-8. **Documentation** - Update all READMEs with Legion branding
-9. **Testing** - Comprehensive test suite for Legion features
+### Core Modules
 
-## 🧭 Vision & Roadmap
+- **`message.rs`** - IRC message parsing and formatting
+- **`command.rs`** - IRC command enumeration and parsing  
+- **`capabilities.rs`** - IRCv3 capability negotiation
+- **`replies.rs`** - IRC numeric replies and errors
+- **`sasl.rs`** - SASL authentication mechanisms
+- **`admin.rs`** - Server administration commands
+- **`validation.rs`** - Input validation and security checks
+- **`utils.rs`** - Utility functions and helpers
 
-### 🎖️ **Mission Statement**
-Create the secure, self-hostable communication platform that gives communities back control of their data while maintaining universal compatibility.
+### Design Principles
 
-### 🗺️ **Roadmap Phases**
+- **Zero-copy parsing** where possible for performance
+- **Comprehensive error handling** with detailed error messages
+- **Extensible architecture** for adding new capabilities
+- **Type safety** with Rust's ownership system
+- **Complete IRC compliance** with modern extensions
 
-#### **Phase 1: Foundation** ✅ (Mostly Complete)
-- ✅ Legion Protocol core capabilities
-- ✅ Channel prefix system  
-- ✅ IRC compatibility layer
-- ⏳ Complete rebranding effort
+## 🧪 Testing
 
-#### **Phase 2: Encryption** 🚧 (In Progress)  
-- 🛡️ Implement Phalanx Protocol (separate repo)
-- 🔐 Integrate E2E encryption in Legion channels
-- 🛡️ Cross-server federation crypto
+```bash
+# Run all tests
+cargo test
 
-#### **Phase 3: Ecosystem** 📋 (Planned)
-- 🏛️ Complete Centurion server implementation
-- ⚔️ Feature-complete Legionnaire client
-- 🤝 Herald bridge service for federation
-- 📱 Mobile Legionnaire apps
+# Run specific test module
+cargo test test_message_parsing
 
-#### **Phase 4: Dominance** 🏆 (Future)
-- 🎮 Gaming community features (voice, rich media)
-- 🏢 Enterprise deployment tools
-- 🌐 Public Legion hosting services
-- 📈 Discord/Slack replacement campaigns
+# Run with output
+cargo test -- --nocapture
 
-## 📞 Current Context for Next Developer
+# Run benchmarks
+cargo bench
+```
 
-**You are picking up after a successful rebranding effort where "IronChat" became "Legion Protocol". All GitHub repositories are correctly set up and populated:**
+### Test Coverage
 
-- ✅ **https://github.com/exec/legion-protocol** - This protocol library
-- ✅ **https://github.com/exec/centurion** - Server daemon  
-- ✅ **https://github.com/exec/legionnaire** - Client applications
-- ✅ **https://github.com/exec/phalanx** - Encryption library (empty, just created)
+- **Message parsing** - Comprehensive IRC message format tests
+- **Command parsing** - All IRC commands and parameters  
+- **Capability negotiation** - IRCv3 capability flows
+- **Tag parsing** - Message tags and escaping
+- **SASL mechanisms** - Authentication flows
+- **Error handling** - Invalid input and edge cases
 
-**The code works but needs import statement updates and the encryption isn't implemented yet.**
+## 🏗️ Development Status
 
-**Primary focus should be:**
-1. **Fix all imports** throughout the codebase
-2. **Start implementing Phalanx** encryption protocol  
-3. **Test end-to-end** Legion capabilities between client/server
+### ✅ Completed
 
-**The vision is solid, the architecture is sound, and the foundation is strong. Time to make it fully functional! 🏛️⚔️**
+- Core IRC message parsing and formatting
+- Complete command enumeration
+- IRCv3 capability negotiation
+- Message tagging support
+- SASL authentication framework
+- Admin module for server management
+- Comprehensive test coverage
+- Documentation and examples
+
+### 🚧 In Progress
+
+- Enhanced error messages and validation
+- Performance optimizations
+- Additional SASL mechanisms
+- Extended IRCv3 features
+
+### 📋 Planned
+
+- Integration with Phalanx encryption library
+- Advanced channel management features
+- Federation and bridging support
+- Performance benchmarking suite
+
+## 🤝 Contributing
+
+Contributions are welcome! Please see the issues section for current development needs.
+
+### Development Setup
+
+```bash
+git clone https://github.com/dylan-k/legion-protocol.git
+cd legion-protocol
+cargo build
+cargo test
+```
+
+### Contributing Guidelines
+
+- Follow Rust naming conventions
+- Add tests for new functionality
+- Update documentation for public APIs
+- Ensure backward compatibility with IRC
+- Run `cargo fmt` and `cargo clippy` before submitting
+
+## 📄 License
+
+Legion Protocol is licensed under the MIT License. See [LICENSE](LICENSE) for details.
+
+## 🙏 Acknowledgments
+
+- The IRC protocol specifications (RFC 1459, RFC 2812)
+- The IRCv3 working group for modern IRC extensions
+- The Rust community for excellent tooling and libraries
+- All contributors and testers who help improve the library
+
+---
+
+*Legion Protocol: Modern IRC extensions built with Rust's safety and performance in mind.*
