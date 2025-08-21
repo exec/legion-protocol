@@ -1,7 +1,7 @@
 [package]
 name = "legion-protocol"
 version = "0.1.0"
-edition = "2024"
+edition = "2021"
 authors = ["Legion Protocol Contributors"]
 description = "🏛️ Legion Protocol - Secure, IRC-compatible communication protocol with E2E encryption"
 license = "MIT"
